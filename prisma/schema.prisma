@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model icecreamingredients {
+  icecreamingredientid Int         @id @default(autoincrement())
+  icecreamid           Int
+  ingredientid         Int
+  quantityneeded       Int
+  icecreams            icecreams   @relation(fields: [icecreamid], references: [icecreamid], onDelete: NoAction, onUpdate: NoAction)
+  ingredients          ingredients @relation(fields: [ingredientid], references: [ingredientid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model icecreams {
+  icecreamid          Int                   @id @default(autoincrement())
+  flavorname          String                @db.VarChar(100)
+  price               Decimal               @db.Decimal(5, 2)
+  calories            Int
+  icecreamingredients icecreamingredients[]
+}
+
+model ingredients {
+  ingredientid        Int                   @id @default(autoincrement())
+  ingredientname      String                @db.VarChar(100)
+  quantity            Int
+  lastupdated         DateTime?             @default(now()) @db.Timestamp(6)
+  icecreamingredients icecreamingredients[]
+}
+
+model orders {
+  orderid       Int       @id @default(autoincrement())
+  totalamount   Decimal   @db.Decimal(10, 2)
+  paymentmethod String    @db.VarChar(50)
+  orderdate     DateTime? @default(now()) @db.Timestamp(6)
+}
