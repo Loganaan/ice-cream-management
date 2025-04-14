@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 
+// Interfaces for data structure
 interface IceCream {
   icecreamid: number;
   flavorname: string;
@@ -26,12 +27,15 @@ interface Ingredient {
 }
 
 export default function Home() {
+  // State management
   const [activeTab, setActiveTab] = useState("Ice Cream");
   const [iceCreamData, setIceCreamData] = useState<IceCream[]>([]);
   const [ingredientsData, setIngredientsData] = useState<Ingredient[]>([]);
   const [selectedIceCream, setSelectedIceCream] = useState<IceCream | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [menuVisible, setMenuVisible] = useState<number | null>(null); // State to manage which ice cream's options are visible
 
+  // Fetch ice cream data on load
   useEffect(() => {
     async function fetchIceCreams() {
       try {
@@ -46,6 +50,7 @@ export default function Home() {
     fetchIceCreams();
   }, []);
 
+  // Fetch ingredients data when the "Ingredients" tab is active
   useEffect(() => {
     if (activeTab === "Ingredients") {
       async function fetchIngredients() {
@@ -62,27 +67,45 @@ export default function Home() {
     }
   }, [activeTab]);
 
+  // Handle viewing ingredients for a specific ice cream
   const handleViewIngredients = (iceCream: IceCream) => {
     setSelectedIceCream(iceCream);
     setShowModal(true);
   };
 
+  // Close the modal
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedIceCream(null);
   };
 
+  // Toggle the visibility of the options menu
+  const toggleMenu = (iceCreamId: number) => {
+    setMenuVisible(menuVisible === iceCreamId ? null : iceCreamId);
+  };
+
+  // Handle Edit action
+  const handleEdit = (iceCream: IceCream) => {
+    console.log("Edit ice cream", iceCream);
+    // Handle editing logic here
+  };
+
+  // Handle Delete action
+  const handleDelete = (iceCreamId: number) => {
+    console.log("Delete ice cream", iceCreamId);
+    // Handle deletion logic here
+  };
+
+  // Render the modal
   const renderModal = () => {
     if (!selectedIceCream) return null;
-  
+
     return (
       <div
         id="default-modal"
         tabIndex={-1}
         aria-hidden={!showModal}
-        className={`fixed inset-0 z-50 flex items-center justify-center p-4 overflow-x-hidden overflow-y-auto h-full ${
-          showModal ? "block" : "hidden"
-        }`}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-x-hidden overflow-y-auto h-full"
       >
         <div className="relative w-full max-w-2xl max-h-full bg-white rounded-lg shadow dark:bg-gray-700">
           {/* Modal Header */}
@@ -129,9 +152,11 @@ export default function Home() {
       </div>
     );
   };
-  
+
+  // Main render
   return (
     <div className="min-h-screen p-8 pb-20 sm:p-20">
+      {/* Tab Navigation */}
       <ul className="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
         {["Ice Cream", "Ingredients", "Dashboard", "Settings", "Contacts"].map((tab) => (
           <li key={tab} className="me-2">
@@ -148,8 +173,9 @@ export default function Home() {
           </li>
         ))}
       </ul>
+      {/* Tab Content */}
       <main className="mt-8">
-        {activeTab === "Ice Cream" && !selectedIceCream && (
+        {activeTab === "Ice Cream" && (
           <div>
             <h1>Ice Creams</h1>
             <div className="relative overflow-x-auto shadow-sm sm:rounded-lg">
@@ -160,6 +186,7 @@ export default function Home() {
                     <th scope="col" className="px-6 py-3">Price</th>
                     <th scope="col" className="px-6 py-3">Calories</th>
                     <th scope="col" className="px-6 py-3">Action</th>
+                    <th scope="col" className="px-6 py-3">Options</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -175,6 +202,29 @@ export default function Home() {
                         >
                           View Ingredients
                         </button>
+                      </td>
+                      <td className="px-6 py-4 relative">
+                        <button
+                          className="text-gray-500 hover:text-gray-700"
+                          onClick={() => toggleMenu(iceCream.icecreamid)}
+                        >
+                          &#x22EE;
+                        </button>
+                        {menuVisible === iceCream.icecreamid && (
+                          <div className="absolute z-10 right-0 -mt-14 w-40 bg-white border border-gray-200 rounded-lg shadow-lg">                            <button
+                              onClick={() => handleEdit(iceCream)}
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(iceCream.icecreamid)}
+                              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -213,4 +263,3 @@ export default function Home() {
     </div>
   );
 }
-
