@@ -6,7 +6,7 @@ interface TabNavigationProps {
 }
 
 const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, setActiveTab }) => {
-  const tabs = ["Ice Cream", "Ingredients", "Dashboard", "Settings", "Contacts"];
+  const tabs = ["Ice Cream", "Ingredients", "Orders"];
 
   return (
     <ul className="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">

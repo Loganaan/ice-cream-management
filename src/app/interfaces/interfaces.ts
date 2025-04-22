@@ -20,4 +20,12 @@ export interface IceCream {
     quantity: number;
     lastupdated: string;
   }
+
+  export interface Order {
+    orderid: number;
+    totalamount: string; // Stored as a decimal in Prisma, represented as a string here to avoid precision issues
+    paymentmethod: string;
+    orderdate: string;
+  }
+  
   

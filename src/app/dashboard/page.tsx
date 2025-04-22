@@ -2,12 +2,15 @@
 import { useState, useEffect, useCallback } from "react";
 import IceCreamTable from "@/components/icecreamtable";
 import IngredientTable from "@/components/ingredienttable";
+import OrdersTable from "@/components/orderstable";
 import EditIceCreamModal from "@/components/editicecreammodal";
 import AddIceCreamModal from "@/components/addicecreammodal"; // Import AddIceCreamModal
 import AddIngredientModal from "@/components/addingredientmodal"
 import EditIngredientModal from "@/components/editingredientsmodal";
+import AddOrderModal from "@/components/addordermodal";
+import EditOrderModal from "@/components/editordermodal";
 import Modal from "@/components/modal";
-import { IceCream, Ingredient } from "@/interfaces/interfaces";
+import { IceCream, Ingredient, Order } from "@/interfaces/interfaces";
 
 export default function Home() {
   // State management
@@ -24,6 +27,96 @@ export default function Home() {
   const [editIngredient, setEditIngredient] = useState<Ingredient | null>(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [addIngredientModalOpen, setAddIngredientModalOpen] = useState(false);
+  const [ordersData, setOrdersData] = useState<Order[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [orderMenuVisible, setOrderMenuVisible] = useState<number | null>(null);
+  const [editOrderModalOpen, setEditOrderModalOpen] = useState(false);
+  const [editOrder, setEditOrder] = useState<Order | null>(null);
+  const [addOrderModalOpen, setAddOrderModalOpen] = useState(false);
+  
+  
+  const fetchOrders = async () => {
+    try {
+      const response = await fetch("/api/orders");
+      if (!response.ok) throw new Error("Failed to fetch orders data");
+      const data: Order[] = await response.json();
+      setOrdersData(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  
+  useEffect(() => {
+    if (activeTab === "Orders") {
+      fetchOrders();
+    }
+  }, [activeTab]);
+
+  // Handle adding a new order
+  const handleAddOrder = async (newOrder: Order) => {
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newOrder),
+      });
+
+      if (response.ok) {
+        console.log("Order added successfully.");
+        fetchOrders();
+        setAddOrderModalOpen(false);
+      } else {
+        console.error("Failed to add order.");
+      }
+    } catch (error) {
+      console.error("Error adding order:", error);
+    }
+  };
+
+  // Handle editing an order
+  const handleSaveOrderEdit = async () => {
+    if (!editOrder) return;
+
+    const response = await fetch(`/api/orders/${editOrder.orderid}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        totalamount: editOrder.totalamount,
+        paymentmethod: editOrder.paymentmethod,
+      }),
+    });
+
+    if (response.ok) {
+      console.log("Order updated successfully.");
+      fetchOrders();
+      closeEditOrderModal();
+    } else {
+      console.error("Failed to update order.");
+    }
+  };
+  
+    // Toggle options menu for orders
+  const toggleOrderMenu = useCallback((orderId: number) => {
+    setOrderMenuVisible(orderMenuVisible === orderId ? null : orderId);
+  }, [orderMenuVisible]);
+
+  // Open modals
+  const openAddOrderModal = () => {
+    setAddOrderModalOpen(true);
+  };
+
+  const openEditOrderModal = (order: Order) => {
+    setEditOrder(order);
+    setEditOrderModalOpen(true);
+  };
+
+  // Close modals
+  const closeEditOrderModal = () => {
+    setEditOrderModalOpen(false);
+    setEditOrder(null);
+  };
+  
 
   // Fetch ice cream data
   const fetchIceCreams = async () => {
@@ -61,6 +154,7 @@ export default function Home() {
 
   // Handle viewing ingredients
   const handleViewIngredients = (iceCream: IceCream) => {
+    console.log("Opening modal for:", iceCream);
     setSelectedIceCream(iceCream);
     setShowModal(true);
   };
@@ -245,7 +339,7 @@ export default function Home() {
   return (
     <div className="min-h-screen p-8 pb-20 sm:p-20">
       <ul className="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
-        {["Ice Cream", "Ingredients", "Dashboard", "Settings", "Contacts"].map((tab) => (
+        {["Ice Cream", "Ingredients", "Orders"].map((tab) => (
           <li key={tab} className="me-2">
             <button
               onClick={() => setActiveTab(tab)}
@@ -272,6 +366,7 @@ export default function Home() {
             openAddModal={openAddModal} // Pass setAddModalOpen to IceCreamTable
           />
         )}
+          {renderModal()} {/* Ensure modal rendering inside JSX */}
         {activeTab === "Ingredients" && (
           <IngredientTable
             ingredientsData={ingredientsData}
@@ -282,7 +377,31 @@ export default function Home() {
             openEditModal={openEditIngredientModal} 
           />
 
-        )}     
+        )}   
+        {activeTab === "Orders" && (
+          <OrdersTable
+            ordersData={ordersData}
+            refreshOrderData={fetchOrders}
+            toggleOrderMenu={toggleMenu}
+            menuVisible={menuVisible}
+            openEditOrderModal={openEditOrderModal}
+            openAddOrderModal={openAddOrderModal}
+          />
+        )}
+        <AddOrderModal 
+          isOpen={addOrderModalOpen} 
+          onClose={() => setAddOrderModalOpen(false)} 
+          handleAddOrder={handleAddOrder} 
+        />
+
+        <EditOrderModal 
+          isOpen={editOrderModalOpen}
+          onClose={() => setEditOrderModalOpen(false)}
+          order={editOrder}
+          setOrder={setEditOrder}
+          handleSaveOrderEdit={handleSaveOrderEdit}
+        />
+
         <AddIngredientModal 
           isOpen={addIngredientModalOpen} 
           onClose={() => setAddIngredientModalOpen(false)} 
