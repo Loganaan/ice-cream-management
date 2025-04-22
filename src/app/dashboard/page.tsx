@@ -4,6 +4,8 @@ import IceCreamTable from "@/components/icecreamtable";
 import IngredientTable from "@/components/ingredienttable";
 import EditIceCreamModal from "@/components/editicecreammodal";
 import AddIceCreamModal from "@/components/addicecreammodal"; // Import AddIceCreamModal
+import AddIngredientModal from "@/components/addingredientmodal"
+import EditIngredientModal from "@/components/editingredientsmodal";
 import Modal from "@/components/modal";
 import { IceCream, Ingredient } from "@/interfaces/interfaces";
 
@@ -15,9 +17,13 @@ export default function Home() {
   const [selectedIceCream, setSelectedIceCream] = useState<IceCream | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [menuVisible, setMenuVisible] = useState<number | null>(null);
+  const [ingredientMenuVisible, setIngredientMenuVisible] = useState<number | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editIceCream, setEditIceCream] = useState<IceCream | null>(null);
-  const [addModalOpen, setAddModalOpen] = useState(false); // State for Add Ice Cream Modal
+  const [editIngredientModalOpen, setEditIngredientModalOpen] = useState(false);
+  const [editIngredient, setEditIngredient] = useState<Ingredient | null>(null);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addIngredientModalOpen, setAddIngredientModalOpen] = useState(false);
 
   // Fetch ice cream data
   const fetchIceCreams = async () => {
@@ -177,6 +183,65 @@ export default function Home() {
     );
   };
 
+  const handleAddIngredient = async (newIngredient: Ingredient) => {
+    try {
+      const response = await fetch("/api/ingredients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newIngredient),
+      });
+
+      if (response.ok) {
+        console.log("Ingredient added successfully.");
+        fetchIngredients();
+        setAddIngredientModalOpen(false);
+      } else {
+        console.error("Failed to add ingredient.");
+      }
+    } catch (error) {
+      console.error("Error adding ingredient:", error);
+    }
+  };
+
+  const handleSaveIngredientEdit = async () => {
+    if (!editIngredient) return;
+
+    const response = await fetch(`/api/ingredients/${editIngredient.ingredientid}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ingredientname: editIngredient.ingredientname,
+        quantity: editIngredient.quantity,
+      }),
+    });
+
+    if (response.ok) {
+      console.log("Ingredient updated successfully.");
+      fetchIngredients();
+      closeEditIngredientModal();
+    } else {
+      console.error("Failed to update ingredient.");
+    }
+  };
+
+  const toggleIngredientMenu = useCallback((ingredientId: number) => {
+    setIngredientMenuVisible(ingredientMenuVisible === ingredientId ? null : ingredientId);
+  }, [ingredientMenuVisible]);
+
+  const openAddIngredientModal = () => {
+    setAddIngredientModalOpen(true);
+  };
+
+  const openEditIngredientModal = (ingredient: Ingredient) => {
+    setEditIngredient(ingredient);
+    setEditIngredientModalOpen(true);
+  };
+
+  const closeEditIngredientModal = () => {
+    setEditIngredientModalOpen(false);
+    setEditIngredient(null);
+  };
+
   return (
     <div className="min-h-screen p-8 pb-20 sm:p-20">
       <ul className="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
@@ -207,8 +272,29 @@ export default function Home() {
             openAddModal={openAddModal} // Pass setAddModalOpen to IceCreamTable
           />
         )}
-        {activeTab === "Ingredients" && <IngredientTable ingredientsData={ingredientsData} />}
-        {showModal && renderModal()}
+        {activeTab === "Ingredients" && (
+          <IngredientTable
+            ingredientsData={ingredientsData}
+            openAddIngredientModal={openAddIngredientModal}
+            refreshIngredientData={fetchIngredients}
+            toggleIngredientMenu={toggleIngredientMenu}
+            menuVisible={ingredientMenuVisible}
+            openEditModal={openEditIngredientModal} 
+          />
+
+        )}     
+        <AddIngredientModal 
+          isOpen={addIngredientModalOpen} 
+          onClose={() => setAddIngredientModalOpen(false)} 
+          handleAddIngredient={handleAddIngredient} 
+          />
+        <EditIngredientModal 
+          isOpen={editIngredientModalOpen}
+          onClose={() => setEditIngredientModalOpen(false)}
+          ingredient={editIngredient}
+          setIngredient={setEditIngredient}
+          handleSaveIngredientEdit={handleSaveIngredientEdit}
+        />
         <EditIceCreamModal 
           isOpen={editModalOpen}
           onClose={closeEditModal}

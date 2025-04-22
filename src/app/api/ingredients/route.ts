@@ -11,3 +11,27 @@ export async function GET() {
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
   }
 }
+
+export async function POST(req: Request) {
+  try {
+    console.log("Received raw request:", req);
+    const body = await req.json();
+    console.log("Received body:", body); // Debug log
+
+    // Create the ingredient entry
+    const newIngredient = await prisma.ingredients.create({
+      data: {
+        ingredientname: body.ingredientname,
+        quantity: body.quantity,
+        lastupdated: new Date(),
+      },
+    });
+
+    console.log("Created Ingredient:", newIngredient);
+
+    return NextResponse.json(newIngredient, { status: 201 });
+  } catch (error) {
+    console.error("Error creating ingredient:", error);
+    return NextResponse.json({ error: "Invalid JSON input" }, { status: 400 });
+  }
+}
