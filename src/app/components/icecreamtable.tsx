@@ -4,9 +4,10 @@ import { IceCream } from "@/interfaces/interfaces";
 interface IceCreamTableProps {
   iceCreamData: IceCream[];
   handleViewIngredients: (iceCream: IceCream) => void;
-  refreshIceCreamData: () => void; // Function passed down to re-fetch data
-  menuVisible: number | null; // Passed down from Home to control visibility of menu
-  toggleMenu: (iceCreamId: number) => void; // Passed down from Home to toggle menu
+  refreshIceCreamData: () => Promise<void>;
+  menuVisible: number | null;
+  toggleMenu: (iceCreamId: number) => void;
+  openEditModal: (iceCream: IceCream) => void;  // Add this if missing
 }
 
 const IceCreamTable: React.FC<IceCreamTableProps> = ({
@@ -15,6 +16,7 @@ const IceCreamTable: React.FC<IceCreamTableProps> = ({
   refreshIceCreamData,
   menuVisible,
   toggleMenu,
+  openEditModal,
 }) => {
   // Handle Edit action
   const handleEdit = async (iceCream: IceCream) => {
@@ -49,6 +51,7 @@ const IceCreamTable: React.FC<IceCreamTableProps> = ({
 
   return (
     <div>
+      <button type="button" className="py-2.5 px-5 me-2 mb-2 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">Add Ice Cream</button>
       <h1>Ice Creams</h1>
       <div className="relative overflow-x-auto shadow-sm sm:rounded-lg">
         <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
@@ -85,7 +88,7 @@ const IceCreamTable: React.FC<IceCreamTableProps> = ({
                   {menuVisible === iceCream.icecreamid && (
                     <div className="absolute z-10 left-8 -mt-14 w-30 bg-white border border-gray-200 rounded-lg shadow-lg">
                       <button
-                        onClick={() => handleEdit(iceCream)}
+                        onClick={() => openEditModal(iceCream)}
                         className="block w-full px-3 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
                       >
                         Edit

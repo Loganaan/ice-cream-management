@@ -1,10 +1,10 @@
 "use client";
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import IceCreamTable from "@/components/icecreamtable";
 import IngredientTable from "@/components/ingredienttable";
+import EditIceCreamModal from "@/components/editicecreammodal";
 import Modal from "@/components/modal";
-import { IceCream, IceCreamIngredient, Ingredient } from "@/interfaces/interfaces";
+import { IceCream, Ingredient } from "@/interfaces/interfaces";
 
 export default function Home() {
   // State management
@@ -13,9 +13,11 @@ export default function Home() {
   const [ingredientsData, setIngredientsData] = useState<Ingredient[]>([]);
   const [selectedIceCream, setSelectedIceCream] = useState<IceCream | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [menuVisible, setMenuVisible] = useState<number | null>(null); // State to manage menu visibility
+  const [menuVisible, setMenuVisible] = useState<number | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editIceCream, setEditIceCream] = useState<IceCream | null>(null);
 
-  // Fetch ice cream data on load
+  // Fetch ice cream data
   const fetchIceCreams = async () => {
     try {
       const response = await fetch("/api/icecreams");
@@ -31,7 +33,7 @@ export default function Home() {
     fetchIceCreams();
   }, []);
 
-  // Fetch ingredients data when the "Ingredients" tab is active
+  // Fetch ingredients data
   const fetchIngredients = async () => {
     try {
       const response = await fetch("/api/ingredients");
@@ -49,7 +51,7 @@ export default function Home() {
     }
   }, [activeTab]);
 
-  // Handle viewing ingredients for a specific ice cream
+  // Handle viewing ingredients
   const handleViewIngredients = (iceCream: IceCream) => {
     setSelectedIceCream(iceCream);
     setShowModal(true);
@@ -61,12 +63,55 @@ export default function Home() {
     setSelectedIceCream(null);
   };
 
-  // Toggle the visibility of the options menu
-  const toggleMenu = (iceCreamId: number) => {
+  // Toggle options menu
+  const toggleMenu = useCallback((iceCreamId: number) => {
     setMenuVisible(menuVisible === iceCreamId ? null : iceCreamId);
+  }, [menuVisible]);
+
+  // Open edit modal
+  const openEditModal = (iceCream: IceCream) => {
+    setEditIceCream(iceCream);
+    setEditModalOpen(true);
+    console.log("hi");
   };
 
-  // Render the modal
+  // Close edit modal
+  const closeEditModal = () => {
+    setEditModalOpen(false);
+    setEditIceCream(null);
+  };
+
+  // Save edited data
+  const handleSaveEdit = async () => {
+    if (!editIceCream) return;
+    
+
+    const response = await fetch(`/api/icecreams/${editIceCream.icecreamid}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        flavorname: editIceCream.flavorname,
+        price: editIceCream.price, // Ensure frontend sends correct price format
+        calories: editIceCream.calories,
+        
+        icecreamingredients: editIceCream.icecreamingredients.map((ingredient) => ({
+          ingredientid: ingredient.ingredients.ingredientid,
+          quantityneeded: ingredient.quantityneeded,
+        })),
+      }),
+    });
+    
+
+    if (response.ok) {
+      console.log("Updated successfully.");
+      fetchIceCreams();
+      closeEditModal();
+    } else {
+      console.error("Failed to update.");
+    }
+  };
+
+  // Render ingredient modal
   const renderModal = () => {
     if (!selectedIceCream) return null;
 
@@ -89,10 +134,8 @@ export default function Home() {
     );
   };
 
-  // Main render
   return (
     <div className="min-h-screen p-8 pb-20 sm:p-20">
-      {/* Tab Navigation */}
       <ul className="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
         {["Ice Cream", "Ingredients", "Dashboard", "Settings", "Contacts"].map((tab) => (
           <li key={tab} className="me-2">
@@ -105,25 +148,30 @@ export default function Home() {
               }`}
             >
               {tab}
-            </button>
+            </button> 
           </li>
         ))}
       </ul>
-      {/* Tab Content */}
       <main className="mt-8">
         {activeTab === "Ice Cream" && (
-          <IceCreamTable
-            iceCreamData={iceCreamData}
-            handleViewIngredients={handleViewIngredients}
-            refreshIceCreamData={fetchIceCreams}
-            toggleMenu={toggleMenu} // Pass toggleMenu to the child component
-            menuVisible={menuVisible} // Pass menuVisible state
+          <IceCreamTable 
+            iceCreamData={iceCreamData} 
+            handleViewIngredients={handleViewIngredients} 
+            refreshIceCreamData={fetchIceCreams} 
+            toggleMenu={toggleMenu} 
+            menuVisible={menuVisible}
+            openEditModal={openEditModal}
           />
         )}
-        {activeTab === "Ingredients" && (
-          <IngredientTable ingredientsData={ingredientsData} />
-        )}
+        {activeTab === "Ingredients" && <IngredientTable ingredientsData={ingredientsData} />}
         {showModal && renderModal()}
+        <EditIceCreamModal 
+          isOpen={editModalOpen}
+          onClose={closeEditModal}
+          iceCream={editIceCream}
+          setIceCream={setEditIceCream}
+          handleSaveEdit={handleSaveEdit}
+        />
       </main>
     </div>
   );
