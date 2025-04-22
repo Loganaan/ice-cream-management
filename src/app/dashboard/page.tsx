@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import IceCreamTable from "@/components/icecreamtable";
 import IngredientTable from "@/components/ingredienttable";
 import EditIceCreamModal from "@/components/editicecreammodal";
+import AddIceCreamModal from "@/components/addicecreammodal"; // Import AddIceCreamModal
 import Modal from "@/components/modal";
 import { IceCream, Ingredient } from "@/interfaces/interfaces";
 
@@ -16,6 +17,7 @@ export default function Home() {
   const [menuVisible, setMenuVisible] = useState<number | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editIceCream, setEditIceCream] = useState<IceCream | null>(null);
+  const [addModalOpen, setAddModalOpen] = useState(false); // State for Add Ice Cream Modal
 
   // Fetch ice cream data
   const fetchIceCreams = async () => {
@@ -68,11 +70,16 @@ export default function Home() {
     setMenuVisible(menuVisible === iceCreamId ? null : iceCreamId);
   }, [menuVisible]);
 
+  const openAddModal = () => {
+    fetchIngredients(); // Ensure ingredients are fetched before opening
+    setAddModalOpen(true);
+  };
+
+
   // Open edit modal
   const openEditModal = (iceCream: IceCream) => {
     setEditIceCream(iceCream);
     setEditModalOpen(true);
-    console.log("hi");
   };
 
   // Close edit modal
@@ -84,23 +91,20 @@ export default function Home() {
   // Save edited data
   const handleSaveEdit = async () => {
     if (!editIceCream) return;
-    
 
     const response = await fetch(`/api/icecreams/${editIceCream.icecreamid}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         flavorname: editIceCream.flavorname,
-        price: editIceCream.price, // Ensure frontend sends correct price format
+        price: editIceCream.price,
         calories: editIceCream.calories,
-        
         icecreamingredients: editIceCream.icecreamingredients.map((ingredient) => ({
           ingredientid: ingredient.ingredients.ingredientid,
           quantityneeded: ingredient.quantityneeded,
         })),
       }),
     });
-    
 
     if (response.ok) {
       console.log("Updated successfully.");
@@ -111,6 +115,46 @@ export default function Home() {
     }
   };
 
+  // Handle adding new ice cream
+  const handleAddIceCream = async (newIceCream: IceCream) => {
+    try {
+      console.log("Sending to API:", JSON.stringify({
+        flavorname: newIceCream.flavorname,
+        price: newIceCream.price,
+        calories: newIceCream.calories,
+        icecreamingredients: newIceCream.icecreamingredients.map((ingredient) => ({
+          ingredientid: ingredient.ingredients.ingredientid,
+          quantityneeded: ingredient.quantityneeded,
+        })),
+      }));
+      
+      const response = await fetch("/api/icecreams", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          flavorname: newIceCream.flavorname,
+          price: newIceCream.price,
+          calories: newIceCream.calories,
+          icecreamingredients: newIceCream.icecreamingredients.map((ingredient) => ({
+            ingredientid: ingredient.ingredients.ingredientid,
+            quantityneeded: ingredient.quantityneeded,
+          })),
+        }),
+      });
+  
+      if (response.ok) {
+        console.log("Ice cream added successfully.");
+        fetchIceCreams(); // Refresh data
+        setAddModalOpen(false); // Close modal
+      } else {
+        const errorData = await response.json();
+        console.error("Failed to add ice cream:", errorData);
+      }
+    } catch (error) {
+      console.error("Error adding ice cream:", error);
+    }
+  };
+  
   // Render ingredient modal
   const renderModal = () => {
     if (!selectedIceCream) return null;
@@ -126,7 +170,6 @@ export default function Home() {
               <p><strong>Name:</strong> {ingredient.ingredients.ingredientname}</p>
               <p><strong>Quantity Available:</strong> {ingredient.ingredients.quantity}</p>
               <p><strong>Quantity Needed:</strong> {ingredient.quantityneeded}</p>
-              <p><strong>Last Updated:</strong> {new Date(ingredient.ingredients.lastupdated).toLocaleDateString()}</p>
             </li>
           ))}
         </ul>
@@ -161,6 +204,7 @@ export default function Home() {
             toggleMenu={toggleMenu} 
             menuVisible={menuVisible}
             openEditModal={openEditModal}
+            openAddModal={openAddModal} // Pass setAddModalOpen to IceCreamTable
           />
         )}
         {activeTab === "Ingredients" && <IngredientTable ingredientsData={ingredientsData} />}
@@ -171,6 +215,12 @@ export default function Home() {
           iceCream={editIceCream}
           setIceCream={setEditIceCream}
           handleSaveEdit={handleSaveEdit}
+        />
+        <AddIceCreamModal 
+          isOpen={addModalOpen}
+          onClose={() => setAddModalOpen(false)}
+          ingredientsData={ingredientsData}
+          handleAddIceCream={handleAddIceCream}
         />
       </main>
     </div>

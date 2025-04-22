@@ -34,13 +34,25 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 // DELETE method to remove a specific ice cream
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   try {
-    await prisma.icecreams.delete({
-      where: { icecreamid: Number(params.id) },
+    const icecreamId = Number(params.id);
+    
+    // Step 1: Delete related ingredients first
+    await prisma.icecreamingredients.deleteMany({
+      where: { icecreamid: icecreamId },
     });
 
-    return NextResponse.json({ message: 'Ice cream deleted successfully' });
+    console.log(`Deleted ingredients linked to icecreamId: ${icecreamId}`);
+
+    // Step 2: Delete the ice cream entry
+    const deletedIceCream = await prisma.icecreams.delete({
+      where: { icecreamid: icecreamId },
+    });
+
+    console.log(`Deleted ice cream ID: ${icecreamId}`);
+
+    return NextResponse.json(deletedIceCream, { status: 200 });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to delete ice cream' }, { status: 500 });
+    console.error("Error deleting ice cream:", error);
+    console.error("Delete failed:", error);
   }
 }
